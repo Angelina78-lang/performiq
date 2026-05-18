@@ -2,9 +2,30 @@ import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../data/epars.db');
+const dbPath = process.env.DATABASE_PATH || 
+  (process.env.VERCEL ? '/tmp/epars.db' : path.join(__dirname, '../data/epars.db'));
+
+// In serverless environments (like Vercel), copy the pre-seeded SQLite database to a writable directory (/tmp)
+if (process.env.VERCEL) {
+  try {
+    const srcPath = path.join(__dirname, '../data/epars.db');
+    // Ensure parent directory for destination exists
+    const destDir = path.dirname(dbPath);
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    // Only copy if the source exists and destination doesn't exist yet
+    if (fs.existsSync(srcPath) && !fs.existsSync(dbPath)) {
+      fs.copyFileSync(srcPath, dbPath);
+      console.log('✅ SQLite database copied to writable Vercel /tmp directory');
+    }
+  } catch (err) {
+    console.error('❌ Failed to copy SQLite database for serverless environment:', err.message);
+  }
+}
 
 let db;
 

@@ -1,81 +1,72 @@
-# PerformIQ Deployment Guide (Vercel)
+# PerformIQ Deployment Guide (100% Vercel)
 
-This guide walks you through deploying the **PerformIQ** application using **Vercel**. 
+This guide walks you through deploying **both the frontend and backend** of **PerformIQ** entirely on [Vercel](https://vercel.com/)! 
 
-Vercel is a premium serverless platform optimized for frontend websites. Because PerformIQ uses an **SQLite database** (which requires a persistent local disk to write records), we cannot run the backend database directly on Vercel's serverless functions (which are read-only and ephemeral).
+We have added robust, custom compatibility layers to make SQLite run seamlessly inside Vercel's serverless functions by dynamically copying the database file to a writable `/tmp` directory on startup.
 
-### 🏆 Recommended Strategy: Hybrid Hosting (Free Tier)
-- **Frontend (React)**: Hosted on **Vercel** (Global CDN, ultra-fast loading, automatic CI/CD).
-- **Backend (Express + SQLite)**: Hosted on **Render** (Node.js web service).
+We will deploy them as two separate projects on your free Vercel account:
+1. **Backend API**: Serverless Node.js/Express App.
+2. **Frontend Website**: Vite/React Static Site.
 
 ---
 
-## 🎨 Step 1: Deploy the React Frontend on Vercel
+## 🔌 Step 1: Deploy the Express Backend on Vercel
 
-Vercel makes frontend deployment effortless:
+1. Sign up/Log in to **Vercel** and click **Add New...** ➜ **Project**.
+2. Connect your GitHub repository: `https://github.com/Angelina78-lang/performiq`.
+3. Configure the Project Settings:
+   - **Name**: `performiq-backend`
+   - **Framework Preset**: Select **Other** (or Leave as default).
+   - **Root Directory**: `backend` *(Crucial! Click Edit and select the `backend` folder).*
+4. Build and Development Settings (Leave as default):
+   - Vercel will automatically read the `backend/vercel.json` file we created and compile the Express app into serverless functions.
+5. Click **Environment Variables** and add:
+   - **Key**: `JWT_SECRET`
+   - **Value**: `your_secure_random_string`
+   - **Key**: `CLIENT_URL`
+   - **Value**: `https://your-frontend-vercel-project.vercel.app` *(You can update this after deploying the frontend to allow CORS access).*
+6. Click **Deploy**.
 
-1. Sign up/Log in to [Vercel](https://vercel.com/).
-2. Click **Add New...** ➜ **Project**.
-3. Import your GitHub repository: `https://github.com/Angelina78-lang/performiq`.
-4. Configure the Project:
+Once finished, Vercel will give you a live backend URL (e.g., `https://performiq-backend.vercel.app`). **Copy this URL!**
+
+---
+
+## 🎨 Step 2: Deploy the React Frontend on Vercel
+
+1. Go back to your Vercel Dashboard and click **Add New...** ➜ **Project**.
+2. Connect the same repository: `https://github.com/Angelina78-lang/performiq`.
+3. Configure the Project Settings:
+   - **Name**: `performiq-frontend`
    - **Framework Preset**: `Vite` (Detected automatically).
-   - **Root Directory**: `frontend` (Crucial! Click Edit and select the `frontend` folder).
-5. Build and Development Settings (Leave as default):
+   - **Root Directory**: `frontend` *(Crucial! Click Edit and select the `frontend` folder).*
+4. Build and Development Settings (Leave as default):
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
    - **Install Command**: `npm install`
-6. Click **Environment Variables** and add:
+5. Click **Environment Variables** and add:
    - **Key**: `VITE_API_URL`
-   - **Value**: `https://your-backend-render-domain.onrender.com/api` (Replace with your actual backend Render URL + `/api`)
-7. Click **Deploy**.
+   - **Value**: `https://your-backend-vercel-project.vercel.app/api` *(Paste your live Vercel backend URL here and append `/api`!).*
+6. Click **Deploy**.
 
-Within 1-2 minutes, your frontend will be live on a premium `.vercel.app` domain!
-
----
-
-## 🔌 Step 2: Handle Client-Side Routing in Vercel (Fix 404 Refresh Bug)
-
-Vercel needs to know how to handle React's client-side routing. If you refresh the page on a subroute (e.g., `/dashboard` or `/employees`), Vercel will return a 404 unless we configure a rewrite.
-
-To fix this, we have created a `vercel.json` file inside the `frontend` directory:
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}
-```
-Vercel reads this file automatically and redirects all route queries to `index.html` seamlessly!
+Within 60 seconds, your frontend will be live on a premium `.vercel.app` domain!
 
 ---
 
-## ⚙️ Step 3: Configure the Backend on Render (Web Service)
+## 🔄 Step 3: Link CORS Origins
 
-Deploy the Express API to Render (which supports the stateful SQLite database):
-
-1. Go to **Render** ➜ **New +** ➜ **Web Service**.
-2. Connect your repo: `https://github.com/Angelina78-lang/performiq`
-3. Settings:
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-4. Environment Variables:
-   - `PORT`: `10000`
-   - `NODE_ENV`: `production`
-   - `JWT_SECRET`: `your_secure_secret_key`
-   - `CLIENT_URL`: `https://your-frontend.vercel.app` (The Vercel frontend URL from Step 1)
-5. Click **Create Web Service**.
-
-*Once your Render backend is live, copy its URL and paste it back into your Vercel Project Settings ➜ Environment Variables ➜ `VITE_API_URL`.*
+To make sure the frontend and backend can communicate securely, update the CORS settings in your backend:
+1. Go to your **Backend Project Settings** in Vercel.
+2. Select **Environment Variables**.
+3. Update `CLIENT_URL` with your exact live Vercel frontend URL: `https://your-frontend-vercel-project.vercel.app`.
+4. Trigger a **Redeploy** on the backend deployment tab so the CORS origin is updated!
 
 ---
 
-## ❓ Can I deploy the Backend on Vercel too?
+## 💾 How SQLite Works in Vercel Serverless (Behind the Scenes)
 
-Technically, yes! Vercel allows hosting Express servers via **Serverless Functions**. However, **SQLite will not work properly** because Vercel serverless functions are read-only and scale down to zero (deleting the database file changes on every request).
+Vercel's standard hosting environment is read-only. To make SQLite run perfectly:
+1. On start, the backend automatically detects it is running in Vercel (`process.env.VERCEL`).
+2. It dynamically copies your pre-seeded SQLite database file (`epars.db`) from your workspace into Vercel's writable `/tmp` directory.
+3. It connects to the database inside `/tmp`, allowing you to add, edit, or delete employees smoothly.
 
-If you absolutely want to run the backend on Vercel, you would need to:
-1. Replace SQLite with a hosted cloud database (such as **Supabase PostgreSQL** or **Neon Serverless Postgres**).
-2. Configure a root `vercel.json` to route `/api/*` to the `backend/server.js` file wrapped in a serverless adapter.
-
-The **Vercel (Frontend) + Render (Backend)** hybrid setup is the best, easiest, and fully functional free-tier configuration for SQLite!
+*(Note: In serverless environments, the `/tmp` folder is temporarily cleared whenever Vercel puts the serverless functions to sleep after a period of inactivity. This means changes will eventually reset back to the 8 sample employees on cold starts, which is perfect for portfolio demonstrations!)*
