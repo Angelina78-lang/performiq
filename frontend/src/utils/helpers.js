@@ -55,6 +55,9 @@ export const isPromotionEligible = (emp) =>
 
 // Extract a friendly error message from an Axios error.
 export const getErrorMessage = (error) => {
+  if (error?.message === 'Network Error') {
+    return '🔌 Network Connection Error: The frontend is unable to reach the backend server. Please ensure that VITE_API_URL is configured in your Vercel Project Settings, and that your backend server is awake and running on Render.';
+  }
   if (error?.response?.data?.message) return error.response.data.message;
   if (error?.message) return error.message;
   return 'Something went wrong. Please try again.';
