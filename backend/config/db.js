@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '../data/epars.db');
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../data/epars.db');
 
 let db;
 
