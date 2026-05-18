@@ -1,0 +1,6 @@
+@echo off
+echo Installing backend...
+npm install
+echo Starting backend...
+npm run dev
+pause
