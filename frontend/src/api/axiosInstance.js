@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Base URL is configurable via Vite env. Falls back to 127.0.0.1 for dev.
-const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api';
+// Base URL is configurable via Vite env. Automatically uses relative path '/api' in production.
+const baseURL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? '/api' : 'http://127.0.0.1:5000/api');
 
 const axiosInstance = axios.create({
   baseURL,
