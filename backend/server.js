@@ -17,7 +17,7 @@ const app = express();
 app.use(express.json());
 
 // CORS — allow configured origins (comma-separated CLIENT_URL)
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173,http://localhost:5174,http://localhost:5175')
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175')
   .split(',')
   .map((o) => o.trim());
 
