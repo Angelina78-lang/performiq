@@ -71,4 +71,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only listen locally, do not block serverless execution on Vercel
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
